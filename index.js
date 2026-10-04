@@ -1,9 +1,14 @@
 import express from "express";
-import router from "./src/router.js";
+import { MongoClient } from "mongodb";
+import createRouter from "./src/router.js";
+
+const client = new MongoClient(process.env.MONGODB_URI);
+await client.connect();
+const db = client.db(process.env.MONGODB_DB || "prueba-local");
 
 const app = express();
-const PORT = process.env.PORT || 4001;
+app.use("/", createRouter({ db }));
 
-app.use("/", router);
-
-app.listen(PORT, () => console.log(`microservicio de prueba en ${PORT}`));
+app.listen(process.env.PORT || 4001, () =>
+  console.log("microservicio en local"),
+);
