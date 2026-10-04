@@ -1,10 +1,9 @@
 import express from "express";
+import router from "./src/router.js";
+
 const app = express();
 const PORT = process.env.PORT || 4001;
 
-app.get("/", (req, res) =>
-  res.json({ msg: "Hola desde el microservicio de prueba" }),
-);
-app.get("/servidor", (req, res) => res.json({ status: "ok" }));
+app.use("/", router);
 
-app.listen(PORT, () => console.log(`hello en ${PORT}`));
+app.listen(PORT, () => console.log(`microservicio de prueba en ${PORT}`));
