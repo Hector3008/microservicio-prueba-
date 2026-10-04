@@ -16,5 +16,8 @@
   },
   "devDependencies": {
     "mongodb": "^7.7.0"
+  },
+  "peerDependencies": {
+    "mongodb": ">=6"
   }
 }
