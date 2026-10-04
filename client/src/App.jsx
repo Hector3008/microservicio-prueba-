@@ -1,122 +1,113 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+const headers = { "Content-Type": "application/json" };
+
+export default function App() {
+  const [items, setItems] = useState([]);
+  const [nombre, setNombre] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [editNombre, setEditNombre] = useState("");
+  const [error, setError] = useState("");
+  const [cargando, setCargando] = useState(true);
+
+  // Rutas relativas (sin "/" inicial) para que funcione bajo /prueba/
+  async function cargar() {
+    try {
+      const res = await fetch("items");
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      setItems(await res.json());
+      setError("");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  useEffect(() => {
+    cargar();
+  }, []);
+
+  async function agregar(e) {
+    e.preventDefault();
+    if (!nombre.trim()) return;
+    const res = await fetch("items", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ nombre }),
+    });
+    if (!res.ok) return setError(`No se pudo crear (${res.status})`);
+    setNombre("");
+    cargar();
+  }
+
+  async function guardar(id) {
+    const res = await fetch(`items/${id}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ nombre: editNombre }),
+    });
+    if (!res.ok) return setError(`No se pudo editar (${res.status})`);
+    setEditId(null);
+    cargar();
+  }
+
+  async function borrar(id) {
+    const res = await fetch(`items/${id}`, { method: "DELETE" });
+    if (!res.ok) return setError(`No se pudo borrar (${res.status})`);
+    cargar();
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <main className="app">
+      <h1>Microservicio de prueba</h1>
 
-      <div className="ticks"></div>
+      <form onSubmit={agregar} className="fila">
+        <input
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          placeholder="Nombre del item"
+        />
+        <button type="submit">Agregar</button>
+      </form>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {error && <p className="error">{error}</p>}
+      {cargando && <p>Cargando...</p>}
+      {!cargando && items.length === 0 && !error && (
+        <p>No hay items todavía.</p>
+      )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      <ul>
+        {items.map((it) => (
+          <li key={it._id} className="fila">
+            {editId === it._id ? (
+              <>
+                <input
+                  value={editNombre}
+                  onChange={(e) => setEditNombre(e.target.value)}
+                  autoFocus
+                />
+                <button onClick={() => guardar(it._id)}>Guardar</button>
+                <button onClick={() => setEditId(null)}>Cancelar</button>
+              </>
+            ) : (
+              <>
+                <span className="nombre">{it.nombre}</span>
+                <button
+                  onClick={() => {
+                    setEditId(it._id);
+                    setEditNombre(it.nombre);
+                  }}
+                >
+                  Editar
+                </button>
+                <button onClick={() => borrar(it._id)}>Borrar</button>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    </main>
+  );
 }
-
-export default App
