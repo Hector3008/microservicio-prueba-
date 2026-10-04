@@ -1,5 +1,7 @@
 import express, { Router } from "express";
 import { ObjectId } from "mongodb";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 export default function createRouter({ db }) {
   const router = Router();
@@ -19,7 +21,8 @@ export default function createRouter({ db }) {
   const nombreValido = (nombre) =>
     typeof nombre === "string" && nombre.trim().length > 0;
 
-  router.get("/", (req, res) =>
+  // Ruta de prueba (la raíz "/" ahora es la app React)
+  router.get("/hola", (req, res) =>
     res.json({ msg: "Hola desde el microservicio de prueba" }),
   );
 
@@ -66,6 +69,18 @@ export default function createRouter({ db }) {
     const { deletedCount } = await items.deleteOne({ _id: req.oid });
     if (!deletedCount) return res.status(404).json({ error: "no encontrado" });
     res.status(204).end();
+  });
+
+  // --- Frontend React (build de Vite en client/dist) ---
+  // Debe ir al final: después de las rutas de la API.
+  const dist = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "../client/dist",
+  );
+  router.use(express.static(dist));
+  router.get("/{*splat}", (req, res, next) => {
+    if (!req.accepts("html")) return next(); // la API no devuelve HTML
+    res.sendFile(path.join(dist, "index.html"));
   });
 
   return router;
